@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BioBank · Sangre Digital</title>
+
+    <!-- Fuente y estilos base -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+
+    <!-- Supabase JS (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 20%, #0d0b1a, #0a0514);
+            display: flex;
+            justify-content: center;
+            padding: 30px 20px;
+            color: #eef2ff;
+        }
+
+        .app-wrapper {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 56px;
+            padding: 40px 45px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 25px;
+        }
+        .header-left h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00f0ff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+        .header-left .sub {
+            font-size: 14px;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .header-badge {
+            background: rgba(0, 240, 255, 0.12);
+            padding: 8px 22px;
+            border-radius: 40px;
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            font-weight: 600;
+            font-size: 14px;
+            color: #00f0ff;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+        }
+
+        .grid-main {
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 35px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-main {
+                grid-template-columns: 1fr;
+            }
+            .app-wrapper {
+                padding: 25px;
+            }
+        }
+
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 32px;
+            padding: 28px 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
+        }
+        .glass-card h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e2e8f0;
+        }
+        .glass-card h2 span {
+            background: linear-gradient(135deg, #a855f7, #ff2d75);
+            padding: 2px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            color: white;
+            -webkit-text-fill-color: white;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            color: white;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #00f0ff;
+            box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.15);
+            background: rgba(0, 0, 0, 0.6);
+        }
+        .form-group input::placeholder {
+            color: #4a5568;
+        }
+        .form-group select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #a855f7, #ff2d75);
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 18px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.25);
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 40px rgba(255, 45, 117, 0.4);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        #resultados {
+            display: none;
+            animation: fadeSlideUp 0.5s ease;
+        }
+        @keyframes fadeSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .result-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 16px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .result-box h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .chip {
+            padding: 5px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .chip.donar {
+            background: rgba(0, 240, 255, 0.15);
+            border-color: #00f0ff;
+            color: #00f0ff;
+        }
+        .chip.recibir {
+            background: rgba(0, 255, 163, 0.12);
+            border-color: #00ffa3;
+            color: #00ffa3;
+        }
+
+        .tabla-compacta {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .tabla-compacta table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .tabla-compacta th {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 4px;
+            color: #94a3b8;
+            font-weight: 600;
+            text-align: center;
+        }
+        .tabla-compacta td {
+            padding: 8px 4px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .tabla-compacta td:first-child {
+            font-weight: 700;
+            color: #cbd5e1;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .fila-destacada td {
+            background: rgba(255, 45, 117, 0.12) !important;
+            border-bottom: 2px solid #ff2d75;
+        }
+        .celda-ok {
+            color: #00f0ff;
+            font-size: 18px;
+        }
+        .celda-no {
+            color: #ff2d75;
+            font-size: 18px;
+        }
+
+        .right-col .glass-card {
+            height: fit-content;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 5px;
+        }
+        .table-responsive table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .table-responsive th {
+            text-align: left;
+            padding: 12px 8px;
+            color: #94a3b8;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table-responsive td {
+            padding: 12px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #e2e8f0;
+        }
+        .table-responsive tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .badge-tipo {
+            display: inline-block;
+            padding: 2px 14px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 13px;
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #c084fc;
+        }
+        .btn-delete {
+            background: rgba(255, 45, 117, 0.15);
+            border: none;
+            color: #ff2d75;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+        .btn-delete:hover {
+            background: rgba(255, 45, 117, 0.3);
+            border-color: #ff2d75;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #4a5568;
+            padding: 30px 0;
+            font-weight: 600;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #0d0b1a;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-left: 6px solid #00f0ff;
+            padding: 16px 28px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            display: none;
+            font-weight: 600;
+            color: white;
+            z-index: 999;
+            animation: fadeSlideUp 0.4s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a855f7;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+            .header-left h1 {
+                font-size: 24px;
+            }
+            .header-badge {
+                font-size: 12px;
+                padding: 4px 14px;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-left">
+                <h1>🧬 BioBank · Sangre</h1>
+                <div class="sub">Biotecnología + Salud Digital · Compatibilidad ABO/Rh</div>
+            </div>
+            <div class="header-badge">
+                ⚡ Conectado a Supabase
+            </div>
+        </div>
+
+        <!-- GRID PRINCIPAL -->
+        <div class="grid-main">
+
+            <!-- COLUMNA IZQUIERDA -->
+            <div class="left-col">
+
+                <!-- FORMULARIO -->
+                <div class="glass-card">
+                    <h2>📋 Registrar Paciente <span>Nuevo</span></h2>
+                    <div class="form-group">
+                        <label>Nombre completo</label>
+                        <input type="text" id="nombreInput" placeholder="Ej: María González" />
+                    </div>
+                    <div class="form-group">
+                        <label>Cédula / CI</label>
+                        <input type="text" id="ciInput" placeholder="Ej: 12345678" />
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de registro</label>
+                        <input type="date" id="fechaInput" />
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de sangre</label>
+                        <select id="tipoSangre">
+                            <option value="A+">A+ (Rh positivo)</option>
+                            <option value="A-">A- (Rh negativo)</option>
+                            <option value="B+">B+ (Rh positivo)</option>
+                            <option value="B-">B- (Rh negativo)</option>
+                            <option value="AB+">AB+ (Rh positivo)</option>
+                            <option value="AB-">AB- (Rh negativo)</option>
+                            <option value="O+">O+ (Rh positivo)</option>
+                            <option value="O-" selected>O- (Donante Universal) ⭐</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="guardarYPaciente()">
+                        🚀 Guardar & Analizar compatibilidad
+                    </button>
+                </div>
+
+                <!-- RESULTADOS DE COMPATIBILIDAD -->
+                <div id="resultados" class="glass-card">
+                    <h2>🩸 Compatibilidad</h2>
+                    <div class="result-grid">
+                        <div class="result-box">
+                            <h3>💉 Puede DONAR a:</h3>
+                            <div id="donarList" class="chip-container">-</div>
+                        </div>
+                        <div class="result-box">
+                            <h3>🩸 Puede RECIBIR de:</h3>
+                            <div id="recibirList" class="chip-container">-</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:#94a3b8; margin-bottom:8px;">Matriz de compatibilidad (fila destacada = tu tipo)</div>
+                    <div class="tabla-compacta">
+                        <table>
+                            <thead>
+                                <tr><th>Donante ↓</th><th>A+</th><th>A-</th><th>B+</th><th>B-</th><th>AB+</th><th>AB-</th><th>O+</th><th>O-</th></tr>
+                            </thead>
+                            <tbody id="cuerpoTabla"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA (Lista de pacientes) -->
+            <div class="right-col">
+                <div class="glass-card">
+                    <h2>📋 Historial de Pacientes <span id="contadorPacientes">0</span></h2>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Nombre</th><th>CI</th><th>Fecha</th><th>Tipo</th><th>Acción</th></tr>
+                            </thead>
+                            <tbody id="tablaPacientesBody">
+                                <tr><td colspan="5" class="empty-state">Cargando pacientes...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast">✅ Paciente registrado correctamente</div>
+
+    <script>
+        // ============================================================
+        // 1. CONFIGURACIÓN DE SUPABASE (CORREGIDO)
+        // ============================================================
+        const SUPABASE_URL = "https://elcyrihdzxcsrjjpacyo.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsY3lyaWhkenhjc3JqanBhY3lvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjY1NDI3NSwiZXhwIjoyMDk4MjMwMjc1fQ.cGRty_0nqlH6sZGeUq_lGxIMaHnr9UYJ40refHNm-bQ";
+
+        // Creamos el cliente con un nombre diferente para evitar colisiones
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ============================================================
+        // 2. LÓGICA DE COMPATIBILIDAD (Biotecnología)
+        // ============================================================
+        const todosLosTipos = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+        const reglas = {
+            "A+": { donaA: ["A+", "AB+"], recibeDe: ["A+", "A-", "O+", "O-"] },
+            "A-": { donaA: ["A+", "A-", "AB+", "AB-"], recibeDe: ["A-", "O-"] },
+            "B+": { donaA: ["B+", "AB+"], recibeDe: ["B+", "B-", "O+", "O-"] },
+            "B-": { donaA: ["B+", "B-", "AB+", "AB-"], recibeDe: ["B-", "O-"] },
+            "AB+": { donaA: ["AB+"], recibeDe: todosLosTipos },
+            "AB-": { donaA: ["AB+", "AB-"], recibeDe: ["A-", "B-", "AB-", "O-"] },
+            "O+": { donaA: ["A+", "B+", "AB+", "O+"], recibeDe: ["O+", "O-"] },
+            "O-": { donaA: todosLosTipos, recibeDe: ["O-"] }
+        };
+
+        function analizarCompatibilidad(tipo) {
+            const regla = reglas[tipo];
+            if (!regla) return null;
+            return {
+                donar: regla.donaA,
+                recibir: regla.recibeDe
+            };
+        }
+
+        // ============================================================
+        // 3. FUNCIONES DE UI (Pintar resultados)
+        // ============================================================
+        function pintarResultados(tipoSeleccionado) {
+            const compat = analizarCompatibilidad(tipoSeleccionado);
+            if (!compat) return;
+
+            const donarDiv = document.getElementById('donarList');
+            const recibirDiv = document.getElementById('recibirList');
+            donarDiv.innerHTML = '';
+            recibirDiv.innerHTML = '';
+
+            compat.donar.forEach(t => {
+                const chip = document.createElement('span');
+                chip.className = 'chip donar';
+                chip.textContent = t;
+                donarDiv.appendChild(chip);
+            });
+            compat.recibir.forEach(t => {
+                const chip = document.createElement('span');
+                chip.className = 'chip recibir';
+                chip.textContent = t;
+                recibirDiv.appendChild(chip);
+            });
+
+            const tbody = document.getElementById('cuerpoTabla');
+            tbody.innerHTML = '';
+            todosLosTipos.forEach(donante => {
+                const fila = document.createElement('tr');
+                if (donante === tipoSeleccionado) fila.className = 'fila-destacada';
+
+                const celdaDonante = document.createElement('td');
+                celdaDonante.textContent = donante;
+                fila.appendChild(celdaDonante);
+
+                todosLosTipos.forEach(receptor => {
+                    const celda = document.createElement('td');
+                    const donanteRegla = reglas[donante];
+                    if (donanteRegla && donanteRegla.donaA.includes(receptor)) {
+                        celda.innerHTML = '<span class="celda-ok">✓</span>';
+                    } else {
+                        celda.innerHTML = '<span class="celda-no">✗</span>';
+                    }
+                    fila.appendChild(celda);
+                });
+                tbody.appendChild(fila);
+            });
+
+            document.getElementById('resultados').style.display = 'block';
+        }
+
+        // ============================================================
+        // 4. FUNCIONES CON SUPABASE (CRUD)
+        // ============================================================
+
+        async function guardarYPaciente() {
+            const nombre = document.getElementById('nombreInput').value.trim();
+            const ci = document.getElementById('ciInput').value.trim();
+            const fecha = document.getElementById('fechaInput').value;
+            const tipo = document.getElementById('tipoSangre').value;
+
+            if (!nombre || !ci || !fecha) {
+                mostrarToast('⚠️ Completa todos los campos (Nombre, CI y Fecha)', true);
+                return;
+            }
+
+            const compat = analizarCompatibilidad(tipo);
+
+            const nuevoPaciente = {
+                nombre: nombre,
+                ci: ci,
+                fecha_registro: fecha,
+                tipo_sangre: tipo,
+                puede_donar_a: compat.donar.join(', '),
+                puede_recibir_de: compat.recibir.join(', ')
+            };
+
+            try {
+                const { error } = await supabaseClient.from('pacientes').insert([nuevoPaciente]);
+                if (error) throw error;
+
+                mostrarToast(`✅ ${nombre} registrado exitosamente`, false);
+                pintarResultados(tipo);
+                cargarPacientes();
+                document.getElementById('nombreInput').value = '';
+                document.getElementById('ciInput').value = '';
+                document.getElementById('fechaInput').value = '';
+            } catch (error) {
+                console.error('Error al guardar:', error);
+                mostrarToast('❌ Error al guardar en Supabase: ' + error.message, true);
+            }
+        }
+
+        async function cargarPacientes() {
+            const tbody = document.getElementById('tablaPacientesBody');
+            const contador = document.getElementById('contadorPacientes');
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('pacientes')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">📭 No hay pacientes registrados</td></tr>`;
+                    contador.textContent = '0';
+                    return;
+                }
+
+                contador.textContent = data.length;
+                tbody.innerHTML = '';
+                data.forEach(p => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td><strong>${p.nombre}</strong></td>
+                        <td>${p.ci}</td>
+                        <td>${p.fecha_registro || '-'}</td>
+                        <td><span class="badge-tipo">${p.tipo_sangre}</span></td>
+                        <td><button class="btn-delete" onclick="eliminarPaciente('${p.id}')">🗑 Eliminar</button></td>
+                    `;
+                    tbody.appendChild(fila);
+                });
+            } catch (error) {
+                console.error('Error al cargar:', error);
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-state">⚠️ Error al conectar con Supabase</td></tr>`;
+            }
+        }
+
+        async function eliminarPaciente(id) {
+            if (!confirm('¿Seguro que deseas eliminar este paciente?')) return;
+            try {
+                const { error } = await supabaseClient.from('pacientes').delete().match({ id: id });
+                if (error) throw error;
+                mostrarToast('🗑 Paciente eliminado', false);
+                cargarPacientes();
+            } catch (error) {
+                mostrarToast('❌ Error al eliminar: ' + error.message, true);
+            }
+        }
+
+        // ============================================================
+        // 5. TOAST
+        // ============================================================
+        function mostrarToast(mensaje, esError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = mensaje;
+            toast.style.display = 'block';
+            toast.style.borderLeftColor = esError ? '#ff2d75' : '#00f0ff';
+            toast.style.color = esError ? '#ff2d75' : '#00f0ff';
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3500);
+        }
+
+        // ============================================================
+        // 6. INICIALIZAR
+        // ============================================================
+        window.onload = function() {
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('fechaInput').value = hoy;
+            cargarPacientes();
+            pintarResultados('O-');
+        };
+    </script>
+
+</body>
+</html>
